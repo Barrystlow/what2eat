@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Food Wheel – Can't Decide What to Eat? Spin!</title>
+<meta name="description" content="Free food decision wheel. Spin to randomly pick what to eat. Choose a preset or add your own options.">
+<style>
+body{font-family:'Segoe UI',sans-serif;background:#0f1220;color:#eef1fa;margin:0;padding:20px;text-align:center}
+h1{color:#ff6b6b}
+.wheelbox{position:relative;display:inline-block}
+canvas{max-width:400px;width:100%;cursor:pointer;display:block}
+.pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:34px;color:#ff6b6b;text-shadow:0 0 4px rgba(0,0,0,.6);z-index:2;pointer-events:none}
+button{background:#ff6b6b;color:#fff;border:none;border-radius:10px;padding:12px 26px;font-size:1rem;font-weight:700;cursor:pointer;margin:6px}
+#result{margin-top:14px;padding:12px 24px;border:2px solid #4ecdc4;border-radius:12px;font-size:1.5rem;font-weight:800;color:#4ecdc4;display:none}
+#result.show{display:inline-block}
+input{background:#232a47;border:1px solid #2e3654;border-radius:8px;padding:10px;color:#eef1fa;width:200px}
+.chips{margin:10px auto;max-width:520px}
+.chip{display:inline-block;background:#232a47;border-radius:8px;padding:5px 10px;margin:4px;font-size:.85rem}
+.chip b{cursor:pointer;color:#9aa3c0;margin-left:6px}
+.footer{margin-top:30px;color:#9aa3c0;font-size:.85rem}
+/* --- Ad containers --- */
+.ad-box{margin:18px auto;max-width:728px;min-height:90px;background:#1a1f36;border:1px dashed #3a4364;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#5b6486;font-size:.8rem;overflow:hidden}
+.ad-box ins{width:100%}
+</style>
+</head>
+<body>
+
+<!-- ===== TOP BANNER AD (728x90 / responsive) ===== -->
+<div class="ad-box" id="adTop">Ad space – top banner</div>
+
+<h1>🍽️ Food Wheel</h1>
+<p>Can't decide what to eat? Pick a preset or add your own, then click the wheel.</p>
+
+<p>
+<button style="background:#4ecdc4;color:#083b37" onclick="loadPreset('Fast Food')">🍔 Fast Food</button>
+<button style="background:#ffd93d;color:#333" onclick="loadPreset('Healthy')">🥗 Healthy</button>
+<button style="background:#a29bfe" onclick="loadPreset('Asian')">🍜 Asian</button>
+<button style="background:#f78fb3" onclick="loadPreset('Italian')">🍝 Italian</button>
+<button style="background:#70a1ff" onclick="loadPreset('Breakfast')">🍳 Breakfast</button>
+<button style="background:#2ed573;color:#083b37" onclick="loadPreset('Desserts')">🍰 Desserts</button>
+</p>
+
+<div class="wheelbox"><div class="pointer">▼</div><canvas id="w" width="400" height="400"></canvas></div><br>
+<button onclick="spin()">🎡 SPIN THE WHEEL</button><br>
+<div id="result"></div><br>
+<button style="display:none;background:#4ecdc4;color:#083b37" id="mapBtn" onclick="findNearby()">📍 Find Nearby</button>
+
+<!-- ===== IN-CONTENT AD (appears after user engages with wheel) ===== -->
+<div class="ad-box" id="adMid" style="display:none">Ad space – in-content</div>
+
+<p>
+<input id="inp" placeholder="Add your own option..." maxlength="24">
+<button style="background:#4ecdc4;color:#083b37" onclick="addOption()">➕ Add</button>
+</p>
+<div class="chips" id="chips"></div>
+
+<!-- ===== BOTTOM BANNER AD ===== -->
+<div class="ad-box" id="adBottom">Ad space – bottom banner</div>
+
+<div class="footer">Your custom options are saved in your browser automatically.</div>
+
+<!-- ===== ADSENSE SCRIPT — paste YOUR code here after approval ===== -->
+<!-- Replace this whole comment block with the <script> snippet from your AdSense dashboard:
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+-->
+
+<script>
+var PRESETS={
+"Fast Food":["Pizza","Burger","Fried Chicken","Tacos","Hot Dog","Sub Sandwich"],
+"Healthy":["Grilled Salmon","Salad Bowl","Chicken Wrap","Veggie Stir-fry","Quinoa Bowl","Sushi"],
+"Asian":["Ramen","Sushi","Pad Thai","Dumplings","Korean BBQ","Pho"],
+"Italian":["Pasta","Margherita Pizza","Lasagna","Risotto","Carbonara","Bruschetta"],
+"Breakfast":["Pancakes","Omelette","Avocado Toast","Breakfast Burrito","Waffles","Bagel"],
+"Desserts":["Ice Cream","Cheesecake","Brownies","Boba Tea","Donuts","Tiramisu"]
+};
+var COLORS=["#ff6b6b","#4ecdc4","#ffd93d","#6a67ce","#f78fb3","#3ec1d3","#ff9f43","#7bed9f","#70a1ff","#e77f67","#2ed573","#a29bfe","#ff6b81","#64d2ff"];
+var options=PRESETS["Fast Food"].slice();
+var angle=0,spinning=false,lastResult="";
+
+function draw(){
+var c=document.getElementById("w"),x=c.getContext("2d");
+x.clearRect(0,0,400,400);x.save();x.translate(200,200);x.rotate(angle);
+var n=options.length,arc=6.2832/n;
+for(var i=0;i<n;i++){
+x.beginPath();x.moveTo(0,0);x.arc(0,0,190,i*arc,(i+1)*arc);x.closePath();
+x.fillStyle=COLORS[i%COLORS.length];x.fill();
+x.strokeStyle="rgba(0,0,0,.3)";x.lineWidth=2;x.stroke();
+x.save();x.rotate(i*arc+arc/2);x.textAlign="right";
+x.fillStyle="#1c2233";x.font="bold 14px sans-serif";
+var lb=options[i];if(lb.length>15)lb=lb.slice(0,14)+"…";
+x.fillText(lb,180,5);x.restore();
+}
+x.restore();
+x.beginPath();x.arc(200,200,26,0,6.2832);x.fillStyle="#ff6b6b";x.fill();
+}
+
+function spin(){
+if(spinning)return;
+if(options.length<2){showResult("Add at least 2 options first!");return;}
+spinning=true;
+document.getElementById("mapBtn").style.display="none";
+var target=angle+(5+Math.random()*3)*6.2832+Math.random()*6.2832;
+var start=angle,dur=3500,t0=null;
+function frame(t){
+if(!t0)t0=t;
+var p=Math.min(1,(t-t0)/dur);
+var e=1-Math.pow(1-p,3);
+angle=start+(target-start)*e;draw();
+if(p<1){requestAnimationFrame(frame);}else{
+spinning=false;
+var n=options.length,arc=6.2832/n;
+var a=(-angle-1.5708)%6.2832;if(a<0)a+=6.2832;
+var idx=Math.floor(a/arc)%n;
+lastResult=options[idx];
+showResult("🎉 "+lastResult);
+document.getElementById("mapBtn").style.display="inline-block";
+refreshAds();
+}
+}
+requestAnimationFrame(frame);
+}
+
+/* Reload ads on result — keeps impressions fresh without violating policy */
+function refreshAds(){
+try{if(window.adsbygoogle){adsbygoogle.push({});}}catch(e){}
+}
+
+function showResult(txt){
+var r=document.getElementById("result");
+r.textContent=txt;r.classList.add("show");
+}
+
+function findNearby(){
+if(lastResult)window.open("https://www.google.com/maps/search/"+encodeURIComponent(lastResult+" near me"),"_blank");
+}
+
+function loadPreset(name){
+options=PRESETS[name].slice();angle=0;draw();showChips();saveOptions();
+document.getElementById("result").classList.remove("show");
+document.getElementById("mapBtn").style.display="none";
+}
+function saveOptions(){try{localStorage.setItem("fw_opts",JSON.stringify(options));}catch(e){}}
+function addOption(){
+var i=document.getElementById("inp"),v=i.value.trim();
+if(v&&options.length<16){options.push(v);i.value="";draw();showChips();saveOptions();}
+}
+function removeOption(i){options.splice(i,1);draw();showChips();saveOptions();}
+function showChips(){
+var h="";
+for(var i=0;i<options.length;i++){h+='<span class="chip">'+options[i].replace(/</g,"&lt;")+'<b onclick="removeOption('+i+')">×</b></span>';}
+document.getElementById("chips").innerHTML=h;
+}
+
+/* Show the mid-page ad only after first engagement (better viewability) */
+function showMidAd(){document.getElementById("adMid").style.display="flex";}
+
+document.getElementById("w").addEventListener("click",function(){spin();showMidAd();});
+document.getElementById("inp").addEventListener("keydown",function(e){if(e.key==="Enter")addOption();});
+try{var saved=JSON.parse(localStorage.getItem("fw_opts"));if(saved&&saved.length>1)options=saved;}catch(e){}
+draw();showChips();
+</script>
+</body>
+</html>
